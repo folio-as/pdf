@@ -20,7 +20,6 @@ import (
 //	string, a PDF string literal
 //	keyword, a PDF keyword
 //	name, a PDF name without the leading slash
-//
 type token interface{}
 
 // A name is a PDF name, without the leading slash.
@@ -373,6 +372,25 @@ func isReal(s string) bool {
 	return ndot == 1
 }
 
+func (b *buffer) readInlineImage() token {
+	tmp := b.tmp[:0]
+	for {
+		c := b.readByte()
+		if c != 'E' {
+			tmp = append(tmp, byte(c))
+			continue
+		}
+		c2 := b.readByte()
+		if c2 != 'I' {
+			tmp = append(tmp, byte(c))
+			tmp = append(tmp, byte(c2))
+			continue
+		}
+		break
+	}
+	return string(tmp)
+}
+
 // An object is a PDF syntax object, one of the following Go types:
 //
 //	bool, a PDF boolean
@@ -419,6 +437,8 @@ func (b *buffer) readObject() object {
 			return b.readDict()
 		case "[":
 			return b.readArray()
+		case "ID":
+			return b.readInlineImage()
 		}
 		b.errorf("unexpected keyword %q parsing object", kw)
 		return nil

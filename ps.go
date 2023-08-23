@@ -82,7 +82,7 @@ func Interpret(strm Value, do func(stk *Stack, op string)) {
 			}
 			if kw, ok := tok.(keyword); ok {
 				switch kw {
-				case "null", "[", "]", "<<", ">>":
+				case "null", "[", "]", "<<", ">>", "ID":
 					break
 				default:
 					for i := len(dicts) - 1; i >= 0; i-- {
