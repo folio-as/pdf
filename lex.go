@@ -372,22 +372,43 @@ func isReal(s string) bool {
 	return ndot == 1
 }
 
+func (b *buffer) sanityCheckEI(i int) bool {
+	if i == 0 {
+		return true
+	}
+
+	ch := b.readByte()
+	defer b.unreadByte()
+
+	if !isSpace(ch) && (ch < 0x20 || ch > 0x7F) {
+		return false
+	}
+
+	i--
+
+	return b.sanityCheckEI(i)
+}
+
 func (b *buffer) readInlineImage() token {
 	tmp := b.tmp[:0]
 	for {
 		c := b.readByte()
-		if c != 'E' {
-			tmp = append(tmp, byte(c))
-			continue
+		if c == 'E' {
+			if c2 := b.readByte(); c2 == 'I' {
+				c3 := b.readByte()
+				b.unreadByte()
+
+				// Check 35 (found empirically) characters after EI
+				if isSpace(c3) && b.sanityCheckEI(35) {
+					break
+				}
+			}
+			b.unreadByte()
 		}
-		c2 := b.readByte()
-		if c2 != 'I' {
-			tmp = append(tmp, byte(c))
-			tmp = append(tmp, byte(c2))
-			continue
-		}
-		break
+
+		tmp = append(tmp, byte(c))
 	}
+
 	return string(tmp)
 }
 
